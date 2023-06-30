@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Контейнеризация (семинары) Семинар №5</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <h1>Урок 5. Docker Compose и Docker Swarm</h1>
+  <h2>Ринат Садретдинов</h2>
+  <h2>Группа 3649</h2>
+
+  <div class="black_box">
+    <h3>Задание №1</h3>
+    <ol>
+      <li>создать <code>docker&nbsp;compose</code> файл, состоящий из 2 различных контейнеров: 1 - веб, 2 - БД</li>
+      <li>запустить <code>docker&nbsp;compose</code> файл</li>
+      <li>по итогу на БД контейнере должно быть 2 реплики, на админере должна быть 1 реплика. Всего должно получиться
+        3 контейнера</li>
+      <li>выводы зафиксировать</li>
+    </ol>
+  </div>
+
+  <ol>
+    <li>Создаём простейший <code>Dockerfile</code> следующего содержания для построения образа базы данных:
+      <pre>
+---
+FROM mariadb:10.10.2
+---
+  </pre>
+    <li>
+      Создаём <code>docker-compose.yml</code> следующего содержания для создания двух реплик контейнеров базы данных и
+      одной реплики <code>adminer</code> (для сервиса <code>db</code> в <code>deploy</code> указываем количество реплик
+      две, а для сервиса <code>adminer</code> количество не указываем по причине того что нам нужна всего одна реплика
+      <code>adminer</code> и если в <code>deploy</code> количество не указывать, то как раз по умолчанию
+      <code>docker&nbsp;compose</code> создаст ровно одну реплику):
+      <pre>
+---
+version: '3.9'
+
+services:
+
+  db:
+    build:
+      dockerfile: ./Dockerfile
+    environment:
+      MARIADB_ROOT_PASSWORD: test123
+    deploy:
+      mode: replicated
+      replicas: 2
+
+  adminer:
+    image: adminer:4.8.1
+    restart: always
+    ports:
+      - 6080:8080
+---
+</pre>
+    </li>
+    <li>
+      Создаём и запускаем все три контейнера в режиме "detach" при помощи команды
+      <br>
+      <br>
+      <code>docker&nbsp;compose&nbsp;up&nbsp;-d</code>
+      <br>
+      <br>
+    </li>
+    <li>
+      При помощи команды
+      <br>
+      <br>
+      <code>docker&nbsp;ps</code>
+      <br>
+      <br>
+      убеждаемся что запущено ровно три контейнера -- две реплики контейнера <code>db</code>
+      и одна контейнера <code>adminer</code>:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_01_1.png" alt="первый скриншот задания №1">
+      <br>
+      <br>
+    </li>
+    <li>
+      Заходим с браузера на URL <code>http://localhost:6080/</code> и видим что запустился сервис <code>adminer</code>:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_01_2.png" alt="второй скриншот задания №1">
+      <br>
+      <br>
+      и сервис <code>adminer</code> имеет доступ к сервису <code>db</code>:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_01_3.png" alt="третий скриншот задания №1">
+      <br>
+      <br>
+    </li>
+  </ol>
+
+
+  <div class="black_box">
+    <h3>Задание №2</h3>
+    <ol>
+      <li>создать кластер и мастер и слейв ноды</li>
+      <li>задеплоить на ноду несколько экземляров какого-нибудь контейнера, например <code>nginx</code></li>
+      <li>обязательно проверить и зафиксировать результаты, чтобы можно было выслать преподавателю для проверки</li>
+    </ol>
+  </div>
+
+  <ol>
+    <li>На <code>Ubuntu</code> находящейся в <code>VirtualBox</code> инициализируем мастер ноду
+      при помощи команды <code>`docker&nbsp;swarm&nbsp;init'</code>:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_02_1.png" alt="первый скриншот задания №2">
+      <br>
+      <br>
+    </li>
+    <li>На хостовой операционной системе <code>Fedora Linux</code> подключаемся к <code>swarm</code>
+      в качестве worker node:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_02_2.png" alt="второй скриншот задания №2">
+      <br>
+      <br>
+    </li>
+    <li>При помощи команды <code>`docker&nbsp;node&nbsp;ls'</code> на мастер ноде в <code>Ubuntu</code>
+      убеждаемся что теперь у нас запущена и мастер нода, и присоедилась worker node:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_02_3.png" alt="третий скриншот задания №2">
+      <br>
+      <br>
+    </li>
+    <li>С мастер ноды <code>Ubuntu</code> находящейся в <code>VirtualBox</code> деплоим три реплики контейнера
+      <code>nginx</code>
+      при помощи команды:
+      <br>
+      <br>
+      <code>docker&nbsp;service&nbsp;create&nbsp;--name&nbsp;nginx&nbsp;--replicas&nbsp;3&nbsp;nginx:alpine</code>:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_02_4.png" alt="четвёртый скриншот задания №2">
+      <br>
+      <br>
+    </li>
+    <li>При помощи команды <code>`docker&nbsp;ps'</code> на worker node убеждаемся что запустились два контейнера
+      <code>nginx</code>:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_02_5.png" alt="пятый скриншот задания №2">
+      <br>
+      <br>
+    </li>
+    <li>И при помощи такой же команды на мастер ноде убеждаемся что запустился один контейнер <code>nginx</code>:
+      <br>
+      <br>
+      <img src="img/containerization_seminar_05_task_02_6.png" alt="шестой скриншот задания №2">
+      <br>
+      <br>
+    </li>
+    <li>То есть три контейнера <code>nginx</code> которые мы задеплоили в наш <code>swarm</code> на мастер ноде
+      <code>docker</code> распределил следующим образом:
+      <p>
+      <ol>
+        <li>два контейнера задеплоились на worker node</li>
+        <li>один контейнер остался на master (leader) node</li>
+      </ol>
+    </li>
+  </ol>
+</body>
+
+</html>
